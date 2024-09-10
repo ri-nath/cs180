@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CS180 Project 1</title>
+    <style>
+        img {
+            display: block;
+            width: 100%;
+            max-width: 512px;
+            height: 100%;
+            max-height: 512px;
+        }
+
+        table {
+            text-align: center;
+            margin: 0 auto;
+            table-layout: fixed
+        }
+
+        span {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <span>
+        <tr><h1>CS180 Project 1</h1></tr>
+        <tr><p>Rishi Nath 2024</p></tr>
+    </span>
+
+    <h2>Approach</h2>
+
+    <h4>Without Recursion</h4>
+    <p>First, I will explain my approach without the recursive component.
+        For each image, we take the separate red, green, and blue (r, g, b) channels, and disregard the outer 30% of the images for alignment (cropping).
+        The principled motivation for this is that the borders on the given image set are artifacts that shouldn't be used for alignment.
+        In practice, I found that croppings less than this amount led to issues with aligning some images properly, like emir.tif.
+    </p>
+    <p>
+        On the cropped images, we perform <a href="https://en.wikipedia.org/wiki/Roberts_cross">edge detection using Robert's cross</a>
+        using <a href="https://scikit-image.org/docs/stable/api/skimage.filters.html#skimage.filters.roberts">skimage.filters.roberts</a>.
+        This is motivated by the idea that we are just aligning features, which should have similar edge shapes in every color channel, but not necessarily similar interiors in every color channel.
+        <table>
+            <tr>
+                <td>
+                    <img src="out/cathedral_blue_channel.jpg">
+                    <p>cathedral.jpg - blue channel</p>
+                </td>
+                <td>
+                    <img src="out/cathedral_blue_edges.jpg">
+                    <p>after edge detection</p>
+                </td>
+            </tr>
+        </table>
+
+        Then, we align the green and red channels with the blue channel separately. To do this, we test every possible pixel offset in the range [-32, +32] for both the x and y directions.
+        We evaulate the goodness with Normalized Cross-Correlation (NCC) - higher NCC is better. We find the offsets with the highest NCC.
+    </p>
+    <p>
+        Then, we apply the offsets to the uncropped channels and compose the final image.
+    </p>
+
+    <h4>With Recursion</h4>
+    <p>To handle larger images, I implemented a recursive image pyramid with downscaling.
+       We recursively downscale the image by a factor of 2 until it is smaller than 512x512 pixels. Imagine each recursive downscale as a "level" on the pyramid.
+       Then, we use the above algorithm to find the best offsets for the downscaled image.
+       We apply these offsets (which have to be re-scaled up) to the "level" above, and then repeat the above algorithm now on that.
+       Etc., etc., recursively "summing" all the previously found offsets, until we return to the top "level" of the pyramid.
+    </p>
+    <p>
+       There is one more optimization I chose to employ - the range [-d, +d] for each level is chosen such that it doubles each level going down the pyramid,
+       ending at [-32, +32] when the image is smaller than 512x512 pixels. This keeps the work constant at every level of the pyramid, as the alignment step is for a single level is
+       O(n^2 * d^2), where n is the side length of the image and d is the range. So, by halving d each time we double n (or equivalently, doubling d every time we halve n), we keep the work constant.
+       In practice, on my laptop, each level takes ~5 seconds.
+    </p>
+
+    <h2>Example Results</h2>
+
+    <p>These are the results of the above algorithm performed on every image in the given data folder.</p>
+
+    <p>
+    The shifts are documented in the format ${channel color}: [${x shift}, ${y shift}].
+    "g" indicates the green channel, while "r" indicates the red channel.
+    There is no shift in the blue channel. The green and red channels are shifted relative to the blue channel.
+    </p>
+
+    <table>
+        <tr>
+            <td>
+                <img src="out/cathedral.jpg">
+                <p>Cathedral<br>g: [+5, +2]<br>r: [+12, +3]</p>
+            </td>
+            <td>
+                <img src="out/church.jpg">
+                <p>Church<br>g: [+25, +4]<br>r: [+58, -4]</p>
+            </td>
+            <td>
+                <img src="out/emir.jpg">
+                <p>Emir<br>g: [+49, +24]<br>r: [+107, +40]</p>
+            </td>
+            <td>
+                <img src="out/harvesters.jpg">
+                <p>Harvesters<br>g: [+60, +17]<br>r: [+124, +13]</p>
+            </td>
+            <td>
+                <img src="out/icon.jpg">
+                <p>Icon<br>g: [+42, +17]<br>r: [+90, +23]</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="out/lady.jpg">
+                <p>Lady<br>g: [+57, +9]<br>r: [+120, +13]</p>
+            </td>
+            <td>
+                <img src="out/melons.jpg">
+                <p>Melons<br>g: [+80, +10]<br>r: [+177, +13]</p>
+            </td>
+            <td>
+                <img src="out/monastery.jpg">
+                <p>Monastery<br>g: [-3, +2]<br>r: [+3, +2]</p>
+            </td>
+            <td>
+                <img src="out/onion_church.jpg">
+                <p>Onion Church<br>g: [+52, +25]<br>r: [+107, +35]</p>
+            </td>
+            <td>
+                <img src="out/sculpture.jpg">
+                <p>Sculpture<br>g: [+33, -11]<br>r: [+140, -27]</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="out/self_portrait.jpg">
+                <p>Self Portrait<br>g: [+78, +29]<br>r: [+175, +36]</p>
+            </td>
+            <td>
+                <img src="out/three_generations.jpg">
+                <p>Three Generations<br>g: [+54, +12]<br>r: [+111, +8]</p>
+            </td>
+            <td>
+                <img src="out/tobolsk.jpg">
+                <p>Tobolsk<br>g: [+3, +2]<br>r: [+6, +3]</p>
+            </td>
+            <td>
+                <img src="out/train.jpg">
+                <p>Train<br>g: [+42, +2]<br>r: [+86, +29]</p>
+            </td>
+            <td>
+
+            </td>
+        </tr>
+    </table>
+
+    <h2>Selected Results</h2>
+    <p>These are the results on some images I personally selected from the <a href="https://www.loc.gov/collections/prokudin-gorskii/?st=grid">Prokudin-Gorskii collection</a>.</p>
+    <table>
+        <tr>
+            <td>
+                <img src="out/etruscan_vase.jpg">
+                <p>Etruscan Vase<br>g: [+24, -2]<br>r: [+113, -2]</p>
+            </td>
+            <td>
+                <img src="out/isfandiyar.jpg">
+                <p>Isfandiyar<br>g: [+38, +9]<br>r: [+95, -10]</p>
+            </td>
+            <td>
+                <img src="out/little_russia.jpg">
+                <p>"Little Russia"<br>g: [-23, 9]<br>r: [-34, 11]</p>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>
