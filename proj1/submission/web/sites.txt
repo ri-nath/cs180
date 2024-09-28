@@ -1,2 +1,2 @@
-https://ri-nath.github.io/cs180/proj1/
-https://github.com/ri-nath/cs180/tree/main/proj1
+https://ri-nath.github.io/cs180/proj2/
+https://github.com/ri-nath/cs180/tree/main/proj2

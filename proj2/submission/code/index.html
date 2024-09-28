@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CS180 Project 2</title>
+    <style>
+        img {
+            display: block;
+            width: 100%;
+            max-width: 512px;
+            height: 100%;
+            max-height: 512px;
+        }
+
+        table {
+            text-align: center;
+            margin: 0 auto;
+            table-layout: fixed
+        }
+
+        span {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <span>
+        <tr><h1>CS180 Project 2</h1></tr>
+        <tr><p>Rishi Nath 2024</p></tr>
+    </span>
+
+    <h2>Part 1: Fun with Filters</h2>
+    <h4>Part 1.1</h4>
+    The partial derivatives and gradient of the cameraman image using D_x and D_y are shown below.
+    The magnitude of the gradient is simply calculated by taking the square root of the sums of the two partial derivative images.
+    <img src="visuals/1-1.JPG">
+
+    <h4>Part 1.2</h4>
+    The same operation described is shown here, except we first "blur" the image by convolving with a gaussian filter.
+    <img src="visuals/1-2-blurred.JPG">
+
+    This time, we use Derivative of Gaussian filters, which look like this:
+    <img src="visuals/1-2-dog.JPG">
+    And the effect is this:
+    <img src="visuals/1-2-dog-applied.JPG">
+    I noticed that while very similar to before, there are some slight differences, though I suspect this has to do with scipy's convolve2d edge behaviour.
+
+    <h2>Part 2: Fun with Frequencies</h2>
+    <h4>Part 2.1</h4>
+    Here are some images sharpened using the "unsharp" filter. There are no intermediate steps as the sharpening is done with one convolution.
+    <img src="visuals/2-1-sharpening.JPG">
+
+    For evaluation, here's a re-sharpened image. I noticed that re-sharpening doesn't work perfectly, which makes sense, as we shoud lose some information when blurring,
+    <img src="visuals/2-1-resharp.JPG">
+
+    <h4>Part 2.2</h4>
+    My first hybrid image is a hybrid between two Pokemon:
+    <img src="visuals/2-2-hybrid-volc.JPG">
+    I'm happy how this turned out, you can see the Frosmoth clearly up close, but Volcarona dominates far away. Here's the FFT:
+    <img src="visuals/2-2-hybrid-fft.JPG">
+    <br>
+    Another hybrid is between two look-alike-actors:
+    <img src="visuals/2-2-hybrid-cera.JPG">
+    I'm really happy about this one. Since the actors look so similar already, it was tough to get right, but it definitely looks like Cera up close, and that one actor that plays Zuckerburg from far away.
+    <br>
+    Finally, Biden and a bust of Aurelian (a Roman emperor)
+    <img src="visuals/2-2-hybrid-biden.JPG">
+    I think this one was funny, but didn't really work.
+
+    <h4>Part 2.3</h4>
+    Here's an example of a Gaussian stack:
+    <img src="visuals/2-3-gaussian-stack.JPG">
+    And an example of a Laplacian stack:
+    <img src="visuals/2-3-laplacian-stack.JPG">
+    And the oraple process:
+    <img src="visuals/2-3-oraple-process.JPG">
+    Note that I used a "mask" wheere the left half was all 1 and the right half was all 0. I put that mask through the gaussian stack process. Basically, I followed the instructions in the paper.
+    Anyways, here's the final oraple:
+    <img src="visuals/2-3-oraple-final.JPG">
+
+    <h4>Part 2.4</h4>
+    The oraple is pictured above. Here's some other blends:
+    <br>
+    First, I blended Oski and the Pokemon Bewear.
+    <img src="visuals/2-3-oski-components.JPG">
+    I used an oval mask to capture Oski's face.
+    <img src="visuals/2-3-oski-final.JPG">
+    I also blended Minas Tirith from Lord of the Rings and King's Landing from Game of Thrones. Maybe they're invading across dimensions or something. I chose these images because the mountain line sort of matched up.
+    <img src="visuals/2-3-minas-components.JPG">
+    I used an irregular mask to try to capture the city of Minas Tirith but leave out the surroundings, whose artstyle clashed with the King's landing artwork.
+    <img src="visuals/2-3-minas-invasion.JPG">
+</body>
+</html>
