@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CS180 Project 3</title>
+    <style>
+        img {
+            display: block;
+            width: 100%;
+            max-width: 512px;
+            height: 100%;
+            max-height: 512px;
+        }
+
+        table {
+            text-align: center;
+            margin: 0 auto;
+            table-layout: fixed
+        }
+
+        span {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <span>
+        <tr><h1>CS180 Project 3</h1></tr>
+        <tr><p>Rishi Nath 2024</p></tr>
+    </span>
+
+    <h4>Part 1: Defining Correspondences</h4>
+    I used <a href="https://cal-cs180.github.io/fa23/hw/proj3/tool.html">this suggested online tool</a> to label correspondences.
+    <img src="visuals/1.JPG">
+
+    <h4>Part 2. Computing the "Mid-way Face"</h4>
+    Original A and B faces:
+    <img src="data/me.jpg">
+    <img src="data/kamala.jpg">
+    The "Mid-way Face":
+    <img src="visuals/2.JPG">
+
+    <h4>Part 3. The Morph Sequence</h4>
+    The gif:
+    <img src="visuals/3.gif">
+    In the gif, I also show how the morph looks on variable speeds.
+
+    <h4>Part 4. The "Mean face" of a population</h4>
+    I calculated the average male face from the imm_face_db dataset. Here are some faces from that dataset warped into the average shape.
+    <img src="visuals/4-ex1.JPG">
+    <img src="visuals/4-ex2.JPG">
+    <img src="visuals/4-ex3.JPG">
+    <img src="visuals/4-ex4.JPG">
+    Here is the average face, warped into the average shape. (i.e. warp each face into the average male shape, and then average the pixels.)
+    <img src="visuals/4-avg.JPG">
+    Here is my face warped into the average geometry.
+    <img src="visuals/4-me-to-avg.JPG">
+    And, here is the average face warped into my geometry.
+    <img src="visuals/4-avg-to-me.JPG">
+
+    <h4>Part 5. Caricatures: Extrapolating from the mean</h4>
+    I used the formula: alpha*{Average Face warped to my geometry} + (1-alpha)* {My face}.
+    Below are results with alpha = 1.2, 1.5, 3, and 5 respectively.
+    <img src="visuals/5.JPG">.
+</body>
+</html>

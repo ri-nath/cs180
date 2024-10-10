@@ -1,0 +1,1 @@
+In this folder, download the imm_face_db database.
