@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CS180 Project 5</title>
+    <style>
+        img {
+            display: block;
+            height: 128px;
+            object-fit: contain;
+            margin: auto
+        }
+
+        table {
+            text-align: center;
+            margin: 0 auto;
+            table-layout: fixed
+        }
+
+        td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        span {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <span>
+        <tr><h1>CS180 Project 3</h1></tr>
+        <tr><p>Rishi Nath 2024</p></tr>
+    </span>
+
+    <h4>A.0 Setup</h4>
+    The three provided text prompts, using the Deeployd IF diffusion model. I used the random seed seed=1444; each of these was generated with num_inference_steps=20.
+    I only display the pre-upsampled images here.
+
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/0_man.png">
+                <p>"a man wearing a hat"</p>
+            </td>
+            <td>
+                <img src="visuals/0_snow.png">
+                <p>"an oil painting of a snowy mountain village"</p>
+            </td>
+            <td>
+                <img src="visuals/0_rocket.png">
+                <p>"a rocket ship"</p>
+            </td>
+        </tr>
+    </table>
+
+    I also generated the same rocket ship prompt with more inference steps.
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/0_rocket.png">
+                <p>"a rocket ship"</p>
+                <p>num_inference_steps=20</p>
+            </td>
+            <td>
+                <img src="visuals/0_more_rocket.png">
+                <p>"a rocket ship"</p>
+                <p>num_inference_steps=40</p>
+            </td>
+        </tr>
+    </table>
+
+    <h4>A.1.1 Implementing the Forward Process</h4>
+    I used the given formula (A.2) to noise the im with noise levels [250, 500, and 750]:
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_0_test_im.png">
+                <p>Original Image</p>
+            </td>
+            <td>
+                <img src="visuals/1_1_noisy_250.png">
+                <p>t=250</p>
+            </td>
+            <td>
+                <img src="visuals/1_1_noisy_500.png">
+                <p>t=500</p>
+            </td>
+            <td>
+                <img src="visuals/1_1_noisy_750.png">
+                <p>t=750</p>
+            </td>
+        </tr>
+    </table>
+
+
+    <h3>A.1.2 Classical Denoising</h3>
+    I used torchvision.transforms.functional.gaussian_blur. Here, k is kernel size (k * k). In retrospect, I could have used much larger k.
+
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_1_noisy_250.png">
+                <p>t=250</p>
+            </td>
+            <td>
+                <img src="visuals/1_1_noisy_500.png">
+                <p>t=500</p>
+            </td>
+            <td>
+                <img src="visuals/1_1_noisy_750.png">
+                <p>t=750</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="visuals/1_2_denoised_250.png">
+                <p>k=3</p>
+            </td>
+            <td>
+                <img src="visuals/1_2_denoised_500.png">
+                <p>k=5</p>
+            </td>
+            <td>
+                <img src="visuals/1_2_denoised_750.png">
+                <p>k=7</p>
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.3 One-step denoising</h3>
+    From equation (A.2), I derived the following relation to predict x_0:
+    <img src="visuals/1_3_eq.JPG">
+    We use stage_1.unet (with the prompt "a high quality photo") to estimate epsilon from x_t given t, then use the above relation to recover an estimate of x_0.
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_1_noisy_250.png">
+                <p>t=250</p>
+            </td>
+            <td>
+                <img src="visuals/1_1_noisy_500.png">
+                <p>t=500</p>
+            </td>
+            <td>
+                <img src="visuals/1_1_noisy_750.png">
+                <p>t=750</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="visuals/1_3_denoised_250.png">
+            </td>
+            <td>
+                <img src="visuals/1_3_denoised_500.png">
+            </td>
+            <td>
+                <img src="visuals/1_3_denoised_750.png">
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.4 Iterative denoising</h3>
+    I implemented iterative denoising as described in the project spec. Essentially, we can predict x_t' from x_t, where t' < t (i.e. t is a more noisy noise level), using the given (A.3) equation:
+    <img src="visuals/1_4_eq.JPG">
+    The iterative desoising algorithm I used has a stride of 30; meaning that at each step, t' - t = 30. Here are some intermediate results from the algorithm:
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_4_iterative_690.png">
+                <p>t=690</p>
+            </td>
+            <td>
+                <img src="visuals/1_4_iterative_540.png">
+                <p>t=540</p>
+            </td>
+            <td>
+                <img src="visuals/1_4_iterative_390.png">
+                <p>t=390</p>
+            </td>
+            <td>
+                <img src="visuals/1_4_iterative_240.png">
+                <p>t=240</p>
+            </td>
+            <td>
+                <img src="visuals/1_4_iterative_90.png">
+                <p>t=90</p>
+            </td>
+        </tr>
+    </table>
+    Here are the results from the methods from the previous sections on this noise level; side-by-side for comparison purposes:
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_0_test_im.png">
+                <p>Original Image</p>
+            </td>
+            <td>
+                <img src="visuals/1_4_gaussian.png">
+                <p>Guassian Denoised</p>
+            </td>
+            <td>
+                <img src="visuals/1_4_one_step.png">
+                <p>One-step Denoised</p>
+            </td>
+            <td>
+                <img src="visuals/1_4_iterative_final.png">
+                <p>Iteratively Denoised</p>
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.5 Diffusion Model Sampling</h3>
+    Here, I used the iterative_denoise function described above; setting i_start = 0, and feeding it pure noise. We're still using the "a high quality photo" prompt.
+
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_5_sample_1.png">
+            </td>
+            <td>
+                <img src="visuals/1_5_sample_2.png">
+            </td>
+            <td>
+                <img src="visuals/1_5_sample_3.png">
+            </td>
+            <td>
+                <img src="visuals/1_5_sample_4.png">
+            </td>
+            <td>
+                <img src="visuals/1_5_sample_5.png">
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.6 Classifier-Free Guidance (CFG)</h3>
+    Now, we apply CFG. Essentially, we also add a scaled difference between a prompted noise and an umprompted noise to the final noise estimate. As before, we generate images by passing this new modified iterative_denoise_cfg function i_start=0 and pure noise.
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_6_sample_1.png">
+            </td>
+            <td>
+                <img src="visuals/1_6_sample_2.png">
+            </td>
+            <td>
+                <img src="visuals/1_6_sample_3.png">
+            </td>
+            <td>
+                <img src="visuals/1_6_sample_4.png">
+            </td>
+            <td>
+                <img src="visuals/1_6_sample_5.png">
+            </td>
+        </tr>
+    </table>
+    The images generated with CFG are certainly higher quality, at least in terms of their detail and vibrancy.
+
+    <h3>A.1.7.0 Image-to-image Translation</h3>
+    Here we use iterative_denoise_cfg to perform image-to-image translation. This follows the "SDEdit" algorithm. We will run SDEdit on some images with i_start indicated in captions:
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_7_0_edit_test_1.png">
+                i_start = 1
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_test_3.png">
+                i_start = 3
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_test_5.png">
+                i_start = 5
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_test_7.png">
+                i_start = 7
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_test_10.png">
+                i_start = 10
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_test_20.png">
+                i_start = 20
+            </td>
+            <td>
+                <img src="visuals/1_0_test_im.png">
+                Original Image
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="visuals/1_7_0_edit_lotr_1.png">
+                i_start = 1
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_lotr_3.png">
+                i_start = 3
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_lotr_5.png">
+                i_start = 5
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_lotr_7.png">
+                i_start = 7
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_lotr_10.png">
+                i_start = 10
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_lotr_20.png">
+                i_start = 20
+            </td>
+            <td>
+                <img src="visuals/1_7_0_lotr.png">
+                Original Image
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="visuals/1_7_0_edit_son_1.png">
+                i_start = 1
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_son_3.png">
+                i_start = 3
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_son_5.png">
+                i_start = 5
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_son_7.png">
+                i_start = 7
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_son_10.png">
+                i_start = 10
+            </td>
+            <td>
+                <img src="visuals/1_7_0_edit_son_20.png">
+                i_start = 20
+            </td>
+            <td>
+                <img src="visuals/1_7_0_son.png">
+                Original Image
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.7.1 Image-to-image Translation</h3>
+    The results of Image-to-image translation on two web images (the art of Gandalf and the eagle; the famous painting "Son of Man" by René Magritte) are shown above. Here are the results on a poorly hand-drawn tomato:
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_7_1_edit_tomato_1.png">
+                i_start = 1
+            </td>
+            <td>
+                <img src="visuals/1_7_1_edit_tomato_3.png">
+                i_start = 3
+            </td>
+            <td>
+                <img src="visuals/1_7_1_edit_tomato_5.png">
+                i_start = 5
+            </td>
+            <td>
+                <img src="visuals/1_7_1_edit_tomato_7.png">
+                i_start = 7
+            </td>
+            <td>
+                <img src="visuals/1_7_1_edit_tomato_10.png">
+                i_start = 10
+            </td>
+            <td>
+                <img src="visuals/1_7_1_edit_tomato_20.png">
+                i_start = 20
+            </td>
+            <td>
+                <img src="visuals/1_7_1_tomato.png">
+                Original Image
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.7.2 Inpainting</h3>
+    Following the description in the spec, I implemented inpainting. Essentially, we create an image mask; where outside the mask we force the pixels to have the same value as the original image, otherwise we reuse our earlier denoising functions.
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_0_test_im.png">
+                Original Image
+            </td>
+            <td>
+                <img src="visuals/1_7_2_test_im_mask.png">
+                Mask
+            </td>
+            <td>
+                <img src="visuals/1_7_2_test_im_replace.png">
+                Inpainting Target
+            </td>
+            <td>
+                <img src="visuals/1_7_2_test_im_inpainted.png">
+                Inpainted
+            </td>
+            <td>
+                <img src="visuals/1_7_2_test_im_inpainted_inverse.png">
+                Reverse Inpainted
+            </td>
+        </tr>
+    </table>
+    In the rightmost image, I inverted the mask and applied the same inpainting algorithm. Here are some more inpainting results.
+    I really liked the apollo inpainting! I was very pleasantly surprised by the model's "creativity".
+    The dog also fits the scene due to the shadow caused by the moon lander.
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_7_2_apollo.png">
+                Original Image
+            </td>
+            <td>
+                <img src="visuals/1_7_2_apollo_mask.png">
+                Mask
+            </td>
+            <td>
+                <img src="visuals/1_7_2_apollo_replace.png">
+                Inpainting Target
+            </td>
+            <td>
+                <img src="visuals/1_7_2_apollo_inpainted_1.png">
+                Inpainted
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="visuals/1_7_2_son.png">
+                Original Image
+            </td>
+            <td>
+                <img src="visuals/1_7_2_son_mask.png">
+                Mask
+            </td>
+            <td>
+                <img src="visuals/1_7_2_son_replace.png">
+                Inpainting Target
+            </td>
+            <td>
+                <img src="visuals/1_7_2_son_inpainted.png">
+                Inpainted
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.7.3 Text-Conditional Image-to-image Translation</h3>
+    Using SDEdit; except instead of restricting ourselves to only using the prompt "a high quality photo", allows us to use the model to guide transformed images with various prompts. See A.1.7.1 for a brief explanation of SDEdit and i_start.
+    Here is the Campanile editing to look like "a rocket ship":
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_7_3_test_1.png">
+                i_start = 1
+            </td>
+            <td>
+                <img src="visuals/1_7_3_test_3.png">
+                i_start = 3
+            </td>
+            <td>
+                <img src="visuals/1_7_3_test_5.png">
+                i_start = 5
+            </td>
+            <td>
+                <img src="visuals/1_7_3_test_7.png">
+                i_start = 7
+            </td>
+            <td>
+                <img src="visuals/1_7_3_test_10.png">
+                i_start = 10
+            </td>
+            <td>
+                <img src="visuals/1_7_3_test_20.png">
+                i_start = 20
+            </td>
+            <td>
+                <img src="visuals/1_0_test_im.png">
+                Original Image
+            </td>
+        </tr>
+    </table>
+
+    Here is the "Son of Man" painting edited to look like "a rocket ship":
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_7_3_son_1.png">
+                i_start = 1
+            </td>
+            <td>
+                <img src="visuals/1_7_3_son_3.png">
+                i_start = 3
+            </td>
+            <td>
+                <img src="visuals/1_7_3_son_5.png">
+                i_start = 5
+            </td>
+            <td>
+                <img src="visuals/1_7_3_son_7.png">
+                i_start = 7
+            </td>
+            <td>
+                <img src="visuals/1_7_3_son_10.png">
+                i_start = 10
+            </td>
+            <td>
+                <img src="visuals/1_7_3_son_20.png">
+                i_start = 20
+            </td>
+            <td>
+                <img src="visuals/1_7_0_son.png">
+                Original Image
+            </td>
+        </tr>
+    </table>
+
+    Here is the Gandalf & Eagle drawing edited to look like "a photo of a dog" (warning, cursed results...):
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_7_3_lotr_1.png">
+                i_start = 1
+            </td>
+            <td>
+                <img src="visuals/1_7_3_lotr_3.png">
+                i_start = 3
+            </td>
+            <td>
+                <img src="visuals/1_7_3_lotr_5.png">
+                i_start = 5
+            </td>
+            <td>
+                <img src="visuals/1_7_3_lotr_7.png">
+                i_start = 7
+            </td>
+            <td>
+                <img src="visuals/1_7_3_lotr_10.png">
+                i_start = 10
+            </td>
+            <td>
+                <img src="visuals/1_7_3_lotr_20.png">
+                i_start = 20
+            </td>
+            <td>
+                <img src="visuals/1_7_0_lotr.png">
+                Original Image
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.8 Visual Anagrams</h3>
+    Here, we simultaneously denoise a second text prompt, but upside down; leading to some interesting results.
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_8_campfire.png">
+                "an oil painting of people around a campfire"
+            </td>
+            <td>
+                <img src="visuals/1_8_campfire_flipped.png">
+                "an oil painting of an old man"
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="visuals/1_8_barista.png">
+                "a photo of a hipster barista"
+            </td>
+            <td>
+                <img src="visuals/1_8_barista_flipped.png">
+                "a photo of the amalfi cost" (sic)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="visuals/1_8_waterfall.png">
+                "a lithograph of waterfalls"
+            </td>
+            <td>
+                <img src="visuals/1_8_waterfall_flipped.png">
+                "a lithograph of a skull"
+            </td>
+        </tr>
+    </table>
+
+    <h3>A.1.9 Hybrid Images</h3>
+    Similarly to A.1.8, we will denoise two prompts simultaneously; this time, instead of flipping, one will be for high frequencies, and the other for low frequencies, similar to project 2.
+    For each image, the first listed prompt is the low frequency prompt, the second listed prompt is the high frequency prompt.
+    <table>
+        <tr>
+            <td>
+                <img src="visuals/1_10_waterfall.png">
+                <p>"a lithograph of a skull"</p>
+                <p>"a lithograph of waterfalls"</p>
+            </td>
+            <td>
+                <img src="visuals/1_10_oldman.png">
+                <p>"an oil painting of an old man"</p>
+                <p>"an oil painting of people around a campfire"</p>
+            </td>
+            <td>
+                <img src="visuals/1_10_dog.png">
+                <p>"a photo of a dog"</p>
+                <p>"a photo of the amalfi cost" (sic)</p>
+            </td>
+        </tr>
+    </table>
+
+    <h3>B.1 Training a Single-Step Denoising Unet</h3>
+    The unet is tasked with denoising MNIST images. Noise corresponds to a sigma level between 0 and 1:
+    <img src="visuals/b_1_noise.JPG">
+    I implemented the unet exactly as specified by the project. In short, I found the provided diagram to be very helpful:
+    <img src="visuals/b_1_unet.JPG" style="height: 512px;">
+    I also trained it with the hyperparameters provided in the project spec. So, I will just display the results, after 1 epoch of training and 5 epochs of training respectively:
+    <img src="visuals/b_1_result.JPG" style="height: 300px;">
+    And the overall training loss for all 5 epochs:
+    <img src="visuals/b_1_loss.JPG" style="height: 400px;">
+    The model was only trained on noise level sigma=0.5 Here is how it performs on denoising other noise levels:
+    <img src="visuals/b_1_ood.JPG" style="height: 256px;">
+
+    <h3>B.2 Training a Diffusion Model</h3>
+    Again, I followed the spec exactly, so I'll just display my results after 1, 5, and 20 epochs (0-indexed captions, sorry!):
+    <img src="visuals/b_2_epoch_1.JPG" style="height: 300px;">
+    <img src="visuals/b_2_epoch_5.JPG" style="height: 300px;">
+    <img src="visuals/b_2_epoch_20.JPG" style="height: 300px;">
+    And more results at 20 epochs:
+    <img src="visuals/b_2_result.JPG" style="height: 300px;">
+    The overall 20-epoch long training loss:
+    <img src="visuals/b_2_loss.JPG" style="height: 300px;">
+
+</body>
+</html>
